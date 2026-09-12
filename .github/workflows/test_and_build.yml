@@ -1,0 +1,44 @@
+name: test and build
+
+on:
+  push:
+    branches: [ "master", "main" ]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r src/requirements.txt
+
+      - name: Check linting with Ruff
+        run: ruff check .
+
+      - name: Run tests with Pytest
+        working-directory: ./src
+        run: pytest test.py
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: ghcr.io/davidzambrano12/tienda-comunitaria:latest
